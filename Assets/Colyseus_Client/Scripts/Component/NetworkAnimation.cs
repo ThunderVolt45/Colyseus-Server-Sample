@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Colyseus_Client
 {
+    [RequireComponent(typeof(Animator))]
     public class NetworkAnimation : NetworkComponent
     {
         private ColyseusAnimation parameter;
