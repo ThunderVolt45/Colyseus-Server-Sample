@@ -38,9 +38,9 @@
 
 ## License
 
-이 샘플 프로젝트를 제작하는데에 [Colyseus](https://github.com/colyseus/colyseus)가 사용되었습니다. 자세한 내용은 [해당 에셋의 라이선스](Server\LICENCE)를 참고해주세요.
+이 샘플 프로젝트를 제작하는데에 [Colyseus](https://github.com/colyseus/colyseus)가 사용되었습니다. 자세한 내용은 [해당 에셋의 라이선스](Server/LICENCE)를 참고해주세요.
 
-이 샘플 프로젝트를 제작하는데에 [Colyseus Unity SDK](https://github.com/colyseus/colyseus-unity-sdk?tab=readme-ov-file)가 사용되었습니다. 자세한 내용은 [해당 에셋의 라이선스](Assets\Colyseus_Server\LICENSE)를 참고해주세요.
+이 샘플 프로젝트를 제작하는데에 [Colyseus Unity SDK](https://github.com/colyseus/colyseus-unity-sdk?tab=readme-ov-file)가 사용되었습니다. 자세한 내용은 [해당 에셋의 라이선스](Assets/Colyseus_Server/LICENSE)를 참고해주세요.
 
 이 샘플 프로젝트를 제작하는데에 Unity에서 제공하는 [Starter Assets](https://assetstore.unity.com/packages/essentials/starter-assets-character-controllers-urp-267961) 에셋이 사용되었습니다. 자세한 내용은 [해당 에셋의 라이선스](https://unity.com/kr/legal/licenses/unity-companion-license)를 참고해주세요.
 
