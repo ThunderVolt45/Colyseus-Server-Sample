@@ -9,7 +9,10 @@
 
 ## Introduction
 
-[Colyseus](https://github.com/colyseus) 기반으로 작성된 Unity용 클라이언트-서버 코드 샘플로 다음과 같은 기능을 제공합니다:
+![Colyseus-Server-Sample Screenshot](./스크린샷%202025-05-02%20160512.png)
+
+
+**[Colyseus](https://github.com/colyseus)** 기반으로 작성된 Unity용 클라이언트-서버 코드 샘플로 다음과 같은 기능을 제공합니다:
 
 1. Transform 동기화
 2. Animation 동기화
