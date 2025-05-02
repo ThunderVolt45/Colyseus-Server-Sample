@@ -45,10 +45,10 @@ namespace Colyseus_Client
 		public int patchRate = 30;
 		public int maxClient = 10;
 
-		[Header("Room Metadata")]
-		public string roomTitle;
-		public string password;
-		public string roomTag;
+		// [Header("Room Metadata")]
+		// public string roomTitle;
+		// public string password;
+		// public string roomTag;
 
 		[Header("Connection State")]
 		public ServerState serverState = ServerState.Waiting;
@@ -100,9 +100,9 @@ namespace Colyseus_Client
 			options["maxClients"] = maxClient;
 
 			// meta data
-			options["roomTitle"] = roomTitle;
-			options["password"] = password;
-			options["roomTag"] = roomTag;
+			// options["roomTitle"] = roomTitle;
+			// options["password"] = password;
+			// options["roomTag"] = roomTag;
 
 			// player
 			options["player"] = JsonUtil.Serialize(NetworkPlayerManager.Instance.PlayerData);
@@ -133,7 +133,7 @@ namespace Colyseus_Client
 		}
 
 		#region Room - Initialize
-		public void InitRoom(ColyseusRoom<GameRoomState> room)
+		private void InitRoom(ColyseusRoom<GameRoomState> room)
 		{
 			SetServerResponseListener(room);
 			SetRoomMessageListener(room);
