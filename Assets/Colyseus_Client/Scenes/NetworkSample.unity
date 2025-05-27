@@ -1812,7 +1812,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1f54a86fb79c7049b8dba105648e6f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetObjects: []
 --- !u!1 &954476554
 GameObject:
   m_ObjectHideFlags: 0
@@ -3534,6 +3533,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetPrefab: {fileID: 1205272163122483360, guid: 0c100d6696b144d47b2ee0596aeb223c, type: 3}
+  createdObjects: []
 --- !u!1 &1964744491
 GameObject:
   m_ObjectHideFlags: 0

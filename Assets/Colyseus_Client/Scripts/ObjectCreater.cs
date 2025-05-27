@@ -2,8 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using Colyseus_Client;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Mono.Cecil.Cil;
 
 public class ObjectCreater : MonoBehaviour
 {
