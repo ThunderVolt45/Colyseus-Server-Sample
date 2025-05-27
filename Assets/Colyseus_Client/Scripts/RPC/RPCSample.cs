@@ -62,7 +62,9 @@ namespace Colyseus_Client
                     log += parameter.parameters[i] + " ";
             }
 
-            Debug.Log(log);
+            // RPC 메시지 생성
+            ChatMessage message = new ChatMessage("SYSTEM", "SYSTEM", DateTime.Now.ToString(), log);
+            FindAnyObjectByType<ChatManager>().CreateChatObject(message);
         }
     }
 }

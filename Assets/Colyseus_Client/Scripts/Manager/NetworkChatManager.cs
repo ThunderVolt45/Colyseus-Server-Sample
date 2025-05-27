@@ -10,12 +10,22 @@ namespace Colyseus_Client
     {
         public string sessionId;
         public string nickname;
-	    public string time;
-	    public string message;
+        public string time;
+        public string message;
 
         public bool IsMine()
         {
             return sessionId.Equals(NetworkManager.Instance.SessionId);
+        }
+
+        public ChatMessage() {}
+        
+        public ChatMessage(string sessionId, string nickname, string time, string message)
+        {
+            this.sessionId = sessionId;
+            this.nickname = nickname;
+            this.time = time;
+            this.message = message;
         }
     }
 
@@ -53,12 +63,12 @@ namespace Colyseus_Client
 
         public async void Send(string message)
         {
-            ChatMessage chatMsg = new ChatMessage();
-
-            chatMsg.sessionId = NetworkManager.Instance.SessionId;
-            chatMsg.nickname = NetworkPlayerManager.Instance.LocalPlayer.Nickname;
-            chatMsg.time = DateTime.Now.ToString();
-            chatMsg.message = message;
+            ChatMessage chatMsg = new ChatMessage(
+                NetworkManager.Instance.SessionId,
+                NetworkPlayerManager.Instance.LocalPlayer.Nickname,
+                DateTime.Now.ToString(),
+                message
+            );
 
             await NetworkManager.Instance.room.Send("Chat", chatMsg);
             

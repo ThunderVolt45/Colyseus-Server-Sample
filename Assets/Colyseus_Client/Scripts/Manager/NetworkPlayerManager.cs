@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Colyseus;
 using Colyseus.Schema;
@@ -61,6 +62,10 @@ namespace Colyseus_Client
                     LocalPlayer = playerPrefab.GetNetworkComponent<NetworkPlayer>();
                 }
             }
+
+            // 플레이어 접속을 알림
+            ChatMessage message = new ChatMessage("SYSTEM", "SYSTEM", DateTime.Now.ToString(), $"Player {key} join the room.");
+            FindAnyObjectByType<ChatManager>().CreateChatObject(message);
         }
 
         private void OnChangePlayer(string key, Player player)
@@ -79,7 +84,9 @@ namespace Colyseus_Client
 
         public void OnRemovePlayer(string key, Player player)
         {
-
+            // 플레이어 접속 중단을 알림
+            ChatMessage message = new ChatMessage("SYSTEM", "SYSTEM", DateTime.Now.ToString(), $"Player {key} left the room.");
+            FindAnyObjectByType<ChatManager>().CreateChatObject(message);
         }
     }
 }

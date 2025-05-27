@@ -33,6 +33,7 @@ namespace Colyseus_Client
             }
         }
 
+        // 채팅 메시지 생성
         public void CreateChatObject(ChatMessage message)
         {
             var chat = Instantiate(messageObject, scrollviewContent);
@@ -42,6 +43,7 @@ namespace Colyseus_Client
             scrollRect.verticalNormalizedPosition = 0f;
         }
 
+        // 서버로 채팅 메시지를 전송
         public void SendMessage()
         {
             inputField.text.Trim();
