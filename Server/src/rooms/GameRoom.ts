@@ -356,7 +356,7 @@ function SetNetworkObjectListener(room: GameRoom) {
         }
 
         // 상태 업데이트
-        if (message.animation != room.state.Animations.get(message.objectId)) {
+        if (message.rigidbody != room.state.Rigidbodies.get(message.objectId)) {
             room.state.Rigidbodies.set(message.objectId, message.rigidbody);
         }
     });

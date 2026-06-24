@@ -118,7 +118,6 @@ namespace Colyseus_Client
 			{
 				room = await client.JoinOrCreate<GameRoomState>(ServerName, options);
 
-				IsHost = true;
 				InitRoom(room);
 				
 				return true;
@@ -174,6 +173,7 @@ namespace Colyseus_Client
 			room.OnMessage<string>("player", sessionId =>
 			{
 				SessionId = sessionId;
+				IsHost = room.State.hostId == sessionId;
 				serverState = ServerState.Connected;
 			});
 
@@ -267,7 +267,7 @@ namespace Colyseus_Client
         {
 			// 리소스가 로드될 때까지 대기
 			var request = Resources.LoadAsync(prefabName);
-			while (request.isDone)
+			while (!request.isDone)
 			{
 				await Awaitable.NextFrameAsync();
 			}
