@@ -59,6 +59,8 @@ namespace Colyseus_Client
 
 		private ColyseusClient client;
 		private Dictionary<string, object> options = new Dictionary<string, object>();
+		private Dictionary<string, TaskCompletionSource<NetworkObject>> pendingNetworkInstantiates;
+		private HashSet<string> pendingNetworkDestroys;
 
 		[Space(10f)]
 		public UnityEvent<StateCallbackStrategy<GameRoomState>> stateCallbackEvent;
@@ -78,6 +80,8 @@ namespace Colyseus_Client
 
 			stateCallbackEvent = new();
 			NetworkObjects = new Dictionary<string, NetworkObject>();
+			pendingNetworkInstantiates = new Dictionary<string, TaskCompletionSource<NetworkObject>>();
+			pendingNetworkDestroys = new HashSet<string>();
 		}
 
 		private async void Start()
@@ -187,17 +191,23 @@ namespace Colyseus_Client
 				Debug.Log(metadata);
 			});
 
-			// 네트워크 오브젝트 생성 실패시 재시도
-			room.OnMessage<string>("Create-Fail", async objectId =>
+			// 네트워크 오브젝트 생성 실패
+			room.OnMessage<string>("Create-Fail", objectId =>
 			{
-				string prefabName = NetworkObjects[objectId].PrefabName;
+				FailPendingNetworkInstantiate(objectId, $"Create failed: object ID {objectId} is duplicated.");
+			});
 
-				// 생성 실패한 네트워크 오브젝트 제거
-				Destroy(NetworkObjects[objectId].gameObject);
-				NetworkObjects.Remove(objectId);
+			room.OnMessage<string>("Destroy-Fail", objectId =>
+			{
+				if (!pendingNetworkDestroys.Remove(objectId))
+				{
+					return;
+				}
 
-				// 재생성 시도
-				await NetworkInstantiate(prefabName);
+				if (NetworkObjects.TryGetValue(objectId, out var networkObject))
+				{
+					SetNetworkComponentsEnabled(networkObject, true);
+				}
 			});
 		}
 
@@ -206,31 +216,55 @@ namespace Colyseus_Client
 			callback = Callbacks.Get(room);
 
 			callback.OnAdd(state => state.Objects, async (sessionId, Obj) => {
-				if (!NetworkObjects.ContainsKey(Obj.objectId))
+				if (NetworkObjects.TryGetValue(Obj.objectId, out var existingObject))
 				{
-					// 리소스 로드
-					var prefab = await InstantiateNetworkObject(Obj.prefabName);
-
-					// 네트워크 오브젝트 초기화
-					NetworkObject networkObject = prefab.GetComponent<NetworkObject>();
-					networkObject.SetObjectId(Obj.objectId);
-					networkObject.Initialize(Obj.prefabName, Obj.owner, SessionId == Obj.owner);
-
-					// 네트워크 오브젝트 등록
-					NetworkObjects.Add(Obj.objectId, networkObject);
+					CompletePendingNetworkInstantiate(Obj.objectId, existingObject);
+					return;
 				}
+
+				// 리소스 로드
+				var prefab = await InstantiateNetworkObject(Obj.prefabName);
+
+				if (!room.State.Objects.ContainsKey(Obj.objectId))
+				{
+					Destroy(prefab);
+					FailPendingNetworkInstantiate(Obj.objectId, $"Create failed: object ID {Obj.objectId} was removed before initialization.");
+					return;
+				}
+
+				if (NetworkObjects.TryGetValue(Obj.objectId, out existingObject))
+				{
+					Destroy(prefab);
+					CompletePendingNetworkInstantiate(Obj.objectId, existingObject);
+					return;
+				}
+
+				// 네트워크 오브젝트 초기화
+				NetworkObject networkObject = prefab.GetComponent<NetworkObject>();
+				networkObject.SetObjectId(Obj.objectId);
+				networkObject.Initialize(Obj.prefabName, Obj.owner, SessionId == Obj.owner);
+
+				// 네트워크 오브젝트 등록
+				NetworkObjects.Add(Obj.objectId, networkObject);
+				CompletePendingNetworkInstantiate(Obj.objectId, networkObject);
 
 				// 변경점 추적
 				callback.OnChange(Obj, () => {
-					NetworkObjects[Obj.objectId].Initialize(Obj.prefabName, Obj.owner, SessionId == Obj.owner);
+					if (NetworkObjects.TryGetValue(Obj.objectId, out var networkObject))
+					{
+						networkObject.Initialize(Obj.prefabName, Obj.owner, SessionId == Obj.owner);
+					}
 				});
 			});
 
 			callback.OnRemove(state => state.Objects, (sessionId, Obj) => {
-				if (NetworkObjects.ContainsKey(Obj.objectId))
+				FailPendingNetworkInstantiate(Obj.objectId, $"Create failed: object ID {Obj.objectId} was removed before initialization.");
+				pendingNetworkDestroys.Remove(Obj.objectId);
+
+				if (NetworkObjects.TryGetValue(Obj.objectId, out var networkObject))
 				{
 					// 오브젝트 제거
-					Destroy(NetworkObjects[Obj.objectId].gameObject);
+					Destroy(networkObject.gameObject);
 					NetworkObjects.Remove(Obj.objectId);
 				}
 			});
@@ -248,19 +282,37 @@ namespace Colyseus_Client
 			networkObj.prefabName = prefabName;
 			networkObj.destroyOnOwnerLeave = destroyOnOwnerLeave;
 
-            _ = room.Send("Create", networkObj);
+			var completionSource = new TaskCompletionSource<NetworkObject>();
+			pendingNetworkInstantiates.Add(networkObj.objectId, completionSource);
 
-			var prefab = await InstantiateNetworkObject(prefabName);
+			try
+			{
+				await room.Send("Create", networkObj);
+				return await completionSource.Task;
+			}
+			catch
+			{
+				pendingNetworkInstantiates.Remove(networkObj.objectId);
+				throw;
+			}
+		}
 
-			// 네트워크 오브젝트 초기화
-			NetworkObject networkObject = prefab.GetComponent<NetworkObject>();
-			networkObject.SetObjectId(networkObj.objectId);
-			networkObject.Initialize(networkObj.prefabName, networkObj.owner, true);
+		private void CompletePendingNetworkInstantiate(string objectId, NetworkObject networkObject)
+		{
+			if (pendingNetworkInstantiates.TryGetValue(objectId, out var completionSource))
+			{
+				pendingNetworkInstantiates.Remove(objectId);
+				completionSource.TrySetResult(networkObject);
+			}
+		}
 
-			// 네트워크 오브젝트 등록
-			NetworkObjects.Add(networkObj.objectId, networkObject);
-
-			return networkObject;
+		private void FailPendingNetworkInstantiate(string objectId, string message)
+		{
+			if (pendingNetworkInstantiates.TryGetValue(objectId, out var completionSource))
+			{
+				pendingNetworkInstantiates.Remove(objectId);
+				completionSource.TrySetException(new InvalidOperationException(message));
+			}
 		}
 
         private async Task<GameObject> InstantiateNetworkObject(string prefabName)
@@ -278,14 +330,41 @@ namespace Colyseus_Client
 
         public async void NetworkDestroy(NetworkObject networkObject)
 		{
+			if (networkObject == null || string.IsNullOrEmpty(networkObject.ObjectId))
+			{
+				return;
+			}
+
+			if (!pendingNetworkDestroys.Add(networkObject.ObjectId))
+			{
+				return;
+			}
+
+			SetNetworkComponentsEnabled(networkObject, false);
+
 			NetworkObj networkObj = new NetworkObj();
 
 			networkObj.objectId = networkObject.ObjectId;
 
-			await room.Send("Destroy", networkObj);
+			try
+			{
+				await room.Send("Destroy", networkObj);
+			}
+			catch (Exception e)
+			{
+				pendingNetworkDestroys.Remove(networkObject.ObjectId);
+				SetNetworkComponentsEnabled(networkObject, true);
+				Debug.LogWarning(e);
+			}
+		}
 
-			Destroy(networkObject.gameObject);
-			NetworkObjects.Remove(networkObject.ObjectId);
+		private void SetNetworkComponentsEnabled(NetworkObject networkObject, bool active)
+		{
+			var networkComponents = networkObject.GetComponents<NetworkComponent>();
+			foreach (var networkComponent in networkComponents)
+			{
+				networkComponent.SetEnable(active);
+			}
 		}
 		#endregion
 

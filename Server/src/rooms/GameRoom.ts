@@ -271,6 +271,7 @@ function SetNetworkObjectListener(room: GameRoom) {
     room.onMessage("Destroy", (client, message) => {
         // 오브젝트 존재 여부 검사
         if (!room.state.Objects.has(message.objectId)) {
+            client.send("Destroy-Fail", message.objectId);
             client.send(ServerResponseWarning, `Destroy FAILED: There is no object with object ID ${message.objectId}`);
             return;
         }
@@ -279,6 +280,7 @@ function SetNetworkObjectListener(room: GameRoom) {
 
         // 오브젝트 소유권 검사
         if (object.owner !== client.sessionId) {
+            client.send("Destroy-Fail", message.objectId);
             client.send(ServerResponseWarning, `Destroy FAILED: You do not own this object ${message.objectId}`);
             return;
         }
@@ -292,7 +294,9 @@ function SetNetworkObjectListener(room: GameRoom) {
         // 소유권 정리
         let ownedObjects = room.state.Players.get(client.sessionId).ownedObjects;
         let index = ownedObjects.indexOf(message.objectId);
-        ownedObjects.splice(index, 1);
+        if (index >= 0) {
+            ownedObjects.splice(index, 1);
+        }
     })
 
     // 트랜스폼 동기화
@@ -301,7 +305,6 @@ function SetNetworkObjectListener(room: GameRoom) {
 
         // 오브젝트 null 검사
         if (object == null) {
-            client.send(ServerResponseError, `Transform Update FAILED: object ${message.objectId} is NOT initialized.`);
             return;
         }
         
@@ -323,7 +326,6 @@ function SetNetworkObjectListener(room: GameRoom) {
 
         // 오브젝트 null 검사
         if (object == null) {
-            client.send(ServerResponseError, `Animation Update FAILED: object ${message.objectId} is NOT initialized.`);
             return;
         }
         
@@ -345,7 +347,6 @@ function SetNetworkObjectListener(room: GameRoom) {
 
         // 오브젝트 null 검사
         if (object == null) {
-            client.send(ServerResponseError, `Rigidbody Update FAILED: object ${message.objectId} is NOT initialized.`);
             return;
         }
         
